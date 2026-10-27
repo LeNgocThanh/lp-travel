@@ -1,0 +1,18 @@
+import { createInvoicePaymentOption, saveInvoiceCalculationSetting, setInvoicePaymentOptionActive, updateInvoicePaymentOption } from "@/app/actions/invoice-settings";
+import { FormDialog } from "@/components/form-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { WorkCaseActionForm } from "@/components/work-case-action-form";
+import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+function OptionForm({ action, item }: { action: (formData: FormData) => void | Promise<void>; item?: { code: string; name: string; content: string } }) {
+  return <WorkCaseActionForm action={action} className="space-y-3"><Input name="code" defaultValue={item?.code ?? ""} placeholder="Mã option" required /><Input name="name" defaultValue={item?.name ?? ""} placeholder="Tên option" required /><Textarea name="content" defaultValue={item?.content ?? ""} rows={12} placeholder="Nội dung hiển thị trên Invoice" required /><Button type="submit">Lưu Payment Option</Button></WorkCaseActionForm>;
+}
+
+export default async function InvoiceSettingsPage() {
+  await requireAdmin(); const [items, setting] = await Promise.all([prisma.invoicePaymentOption.findMany({ orderBy: [{ active: "desc" }, { name: "asc" }] }), prisma.invoiceSetting.findUnique({ where: { id: "default" } })]);
+  return <div className="space-y-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-semibold">Invoice Settings</h1><p className="text-sm text-muted-foreground">Quản lý tiền đặt cọc và nhiều phương án thanh toán khi lập Invoice.</p></div><FormDialog title="Tạo Payment Option" version={items.length} triggerLabel="Thêm Payment Option"><OptionForm action={createInvoicePaymentOption} /></FormDialog></div><Card><CardHeader><CardTitle>Deposit & Due Date</CardTitle><CardDescription>Deposit được tính theo phần trăm Total Amount và đến hạn trước Date Confirmation theo số ngày cấu hình.</CardDescription></CardHeader><CardContent><WorkCaseActionForm action={saveInvoiceCalculationSetting} className="grid gap-3 md:grid-cols-2"><label className="space-y-1 text-sm font-medium">Deposit (%)<Input name="depositPercent" type="number" min={0} max={100} step="0.01" defaultValue={(setting?.depositPercent ?? 50).toString()} required /></label><label className="space-y-1 text-sm font-medium">Số ngày trước Due Date<Input name="depositDueDays" type="number" min={0} max={3650} defaultValue={setting?.depositDueDays ?? 50} required /></label><div className="md:col-span-2"><Button type="submit">Lưu cấu hình</Button></div></WorkCaseActionForm></CardContent></Card><div className="grid gap-4 lg:grid-cols-2">{items.map((item) => <Card key={item.id} className={item.active ? "" : "opacity-60"}><CardHeader><CardTitle>{item.name}</CardTitle><CardDescription>{item.code} · {item.active ? "Đang sử dụng" : "Đã lưu trữ"}</CardDescription></CardHeader><CardContent className="space-y-3"><pre className="whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-xs">{item.content}</pre><div className="flex gap-2"><FormDialog title={`Sửa ${item.name}`} version={item.updatedAt.getTime()} triggerLabel="Sửa" triggerVariant="outline"><OptionForm action={updateInvoicePaymentOption.bind(null, item.id)} item={item} /></FormDialog><WorkCaseActionForm action={setInvoicePaymentOptionActive.bind(null, item.id, !item.active)}><Button type="submit" variant="ghost">{item.active ? "Lưu trữ" : "Khôi phục"}</Button></WorkCaseActionForm></div></CardContent></Card>)}</div></div>;
+}

@@ -1,0 +1,5 @@
+ALTER TABLE "InvoiceEstimate" ADD COLUMN "exchangeRateVnd" DECIMAL(18,2);
+
+ALTER TABLE "InvoiceEstimateCostItem"
+  ADD COLUMN "group" TEXT NOT NULL DEFAULT 'ACCOMMODATION',
+  ADD COLUMN "url" TEXT;

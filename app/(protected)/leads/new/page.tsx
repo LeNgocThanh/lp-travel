@@ -1,0 +1,17 @@
+import Link from "next/link";
+import { LeadForm } from "@/components/lead-form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { hasResourceAction } from "@/lib/lead-access";
+import { redirect } from "next/navigation";
+
+export default async function NewLeadPage() {
+  const user = await requireUser();
+  if (!(await hasResourceAction(user, "LEADS", "CREATE"))) redirect("/leads");
+  const [channels, countries, leadSources, travelTypes, leadStatuses, leadQualities, preferredContacts, hotelCategories, bookingStatuses, paymentStatuses, followUpStatuses, lostReasons, mealPreferences, users] = await Promise.all([
+    prisma.channel.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.country.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.leadSource.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.travelType.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.leadStatus.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.leadQuality.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.preferredContact.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.hotelCategory.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.leadBookingStatus.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.paymentStatus.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.followUpStatus.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.lostReason.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.mealPreference.findMany({ where: { active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }), prisma.user.findMany({ where: { active: true }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
+  ]);
+  return <div className="space-y-5"><div className="flex items-start justify-between gap-4"><div><h1 className="text-2xl font-semibold">Tạo Lead</h1><p className="text-sm text-muted-foreground">Nhập thông tin yêu cầu du lịch và quá trình chăm sóc ban đầu.</p></div><Button nativeButton={false} render={<Link href="/leads" />} variant="outline">Danh sách Lead</Button></div><Card><CardHeader><CardTitle>Thông tin Lead</CardTitle><CardDescription>Các ô danh mục cho phép chọn gợi ý hoặc nhập nội dung mới.</CardDescription></CardHeader><CardContent><LeadForm channels={channels} countries={countries} leadSources={leadSources} travelTypes={travelTypes} leadStatuses={leadStatuses} leadQualities={leadQualities} preferredContacts={preferredContacts} hotelCategories={hotelCategories} bookingStatuses={bookingStatuses} paymentStatuses={paymentStatuses} followUpStatuses={followUpStatuses} lostReasons={lostReasons} mealPreferences={mealPreferences} users={users.map((user) => ({ id: user.id, name: user.fullName }))} /></CardContent></Card></div>;
+}

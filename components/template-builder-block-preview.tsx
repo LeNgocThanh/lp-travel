@@ -1,0 +1,45 @@
+import type { CSSProperties } from "react";
+import { BUILDER_DATASETS, BUILDER_VARIABLES, type BuilderBlock } from "@/lib/template-builder";
+import { displayTemplateValue, getTemplateDataValue, TEMPLATE_BUILDER_SAMPLE_DATA, type TemplateDocumentData, type TemplateDocumentValue } from "@/lib/template-builder-document-data";
+
+function table(headers: string[], rows: string[][], headerColor = "#f8fafc") {
+  return <table className="w-full border-collapse text-[10px]"><thead><tr>{headers.map((header) => <th key={header} className="border border-slate-500 p-1.5 text-left" style={{ backgroundColor: headerColor }}>{header}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={index}>{row.map((value, column) => <td key={column} className="border border-slate-400 p-1.5">{value}</td>)}</tr>)}</tbody></table>;
+}
+
+function objectRows(value: TemplateDocumentValue | undefined) {
+  return Array.isArray(value) ? value.filter((item): item is { [key: string]: TemplateDocumentValue } => !!item && typeof item === "object" && !Array.isArray(item)) : [];
+}
+
+function rowValue(row: { [key: string]: TemplateDocumentValue }, key: string) {
+  return displayTemplateValue(row[key]);
+}
+
+function listValues(value: TemplateDocumentValue | undefined) {
+  return Array.isArray(value) ? value.map(displayTemplateValue) : [];
+}
+
+export function TemplateBuilderBlockPreview({ block, documentType, data = TEMPLATE_BUILDER_SAMPLE_DATA[documentType] ?? {} }: { block: BuilderBlock; documentType: string; data?: TemplateDocumentData }) {
+  const variables = BUILDER_VARIABLES[documentType] ?? [];
+  const datasets = BUILDER_DATASETS[documentType] ?? [];
+  const variable = variables.find((item) => item.value === block.variable);
+  const dataset = datasets.find((item) => item.value === block.dataset);
+  const style: CSSProperties = { backgroundColor: block.backgroundColor, color: block.color, fontSize: block.fontSize, fontWeight: block.bold ? 700 : undefined, fontStyle: block.italic ? "italic" : undefined, padding: block.padding, marginTop: block.marginTop, textAlign: block.align };
+
+  if (block.type === "heading") return <div style={{ ...style, fontSize: block.fontSize ?? (block.level === 1 ? 24 : block.level === 2 ? 18 : 15), fontWeight: 700 }}>{block.content}</div>;
+  if (block.type === "text") return <p className="whitespace-pre-wrap" style={style}>{block.content}</p>;
+  if (block.type === "field") return <p style={style}>{block.showLabel && <strong>{block.label}: </strong>}{block.variable ? displayTemplateValue(getTemplateDataValue(data, block.variable)) : variable?.sample ?? "Chưa chọn trường"}</p>;
+  if (block.type === "divider") return <hr style={{ borderTopWidth: block.thickness, borderTopStyle: block.style, borderTopColor: block.color, marginTop: block.marginTop }} />;
+  if (block.type === "spacer") return <div style={{ height: block.height }} />;
+  if (block.type === "repeater") { const columns = block.columns ?? []; const rows = objectRows(block.dataset ? getTemplateDataValue(data, block.dataset) : undefined); return table(columns.map((column) => dataset?.columns.find((item) => item.value === column)?.label ?? column), rows.map((row) => columns.map((column) => rowValue(row, column))), block.backgroundColor); }
+  const itineraryDays = objectRows(getTemplateDataValue(data, "itinerary.days"));
+  if (block.type === "itinerarySummary") return table(["Day", "Itinerary", "Transport", "Meals"], itineraryDays.map((day) => [`Day ${rowValue(day, "dayNumber")} (${rowValue(day, "date")})`, rowValue(day, "title"), rowValue(day, "transport"), `(${rowValue(day, "meals")})`]));
+  if (block.type === "itineraryDetails") return <div className="space-y-4 text-[11px]">{itineraryDays.map((day) => <section key={`${rowValue(day, "dayNumber")}-${rowValue(day, "date")}`}><h3 className="font-bold text-amber-800">Day {rowValue(day, "dayNumber")} ({rowValue(day, "date")}) {rowValue(day, "title")} ({rowValue(day, "meals")})</h3>{rowValue(day, "accommodation") !== "—" && <p><i>Accommodation:</i> {rowValue(day, "accommodation")}</p>}{rowValue(day, "flight") !== "—" && day.isLastDay !== true && <p className="font-bold">Flight: {rowValue(day, "flight")}</p>}<p className="mt-1">{rowValue(day, "content")}</p>{rowValue(day, "flight") !== "—" && day.isLastDay === true && <p className="font-bold">Flight: {rowValue(day, "flight")}</p>}{rowValue(day, "overnight") !== "—" && <p className="font-bold">{rowValue(day, "overnight")}</p>}{rowValue(day, "notes") !== "—" && <p className="italic text-red-600">Note: {rowValue(day, "notes")}</p>}</section>)}</div>;
+  if (block.type === "itineraryInformation") return <div className="space-y-5 text-[10px]"><h2 className="text-sm font-bold">II. Quotation &amp; Information</h2><div className="grid grid-cols-2 border border-black"><div className="border-r border-black"><h3 className="border-b border-black p-1 text-center font-bold text-amber-500">Inclusions</h3><ul className="list-disc space-y-1 p-3 pl-6">{listValues(getTemplateDataValue(data, "itinerary.inclusions")).map((item) => <li key={item}>{item}</li>)}</ul></div><div><h3 className="border-b border-black p-1 text-center font-bold text-amber-500">Exclusions</h3><ul className="list-disc space-y-1 p-3 pl-6">{listValues(getTemplateDataValue(data, "itinerary.exclusions")).map((item) => <li key={item}>{item}</li>)}</ul></div></div><div><h3 className="font-bold text-amber-500">NOTES:</h3><ul className="list-disc pl-6">{listValues(getTemplateDataValue(data, "itinerary.notes")).map((item) => <li key={item}>{item}</li>)}</ul></div></div>;
+  if (block.type === "invoiceParties") return <div className="grid grid-cols-2 gap-8 text-[10px]"><div><p><b>Bill to:</b> {displayTemplateValue(getTemplateDataValue(data, "customer.name"))}</p><p><b>Contact:</b> {displayTemplateValue(getTemplateDataValue(data, "customer.contact"))}</p><p><b>Booking Code:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.bookingCode"))}</p><p><b>Due Date:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.dueDate"))}</p><p><b>Email:</b> {displayTemplateValue(getTemplateDataValue(data, "customer.email"))}</p></div><div><p><b>Invoice Issuer:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.issuerName"))}</p><p><b>Contact:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.issuerContact"))}</p><p><b>Invoice date:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.date"))}</p><p><b>Email:</b> {displayTemplateValue(getTemplateDataValue(data, "invoice.issuerEmail"))}</p></div></div>;
+  if (block.type === "invoiceItems") { const rows = objectRows(getTemplateDataValue(data, "invoice.items")); return table(["Item", "Description", "Qty", "Unit", "Price/P", "Amount"], rows.map((item) => ["number", "description", "quantity", "unit", "price", "amount"].map((key) => rowValue(item, key))), "#fde68a"); }
+  if (block.type === "invoiceTotals") return <div className="ml-auto w-3/5 text-[10px]"><div className="flex justify-between border-b py-1 font-bold"><span>TOTAL AMOUNT IN US Dollar</span><span>{displayTemplateValue(getTemplateDataValue(data, "invoice.totalAmountUsd"))}</span></div><div className="grid grid-cols-[1fr_auto_auto] border-b"><b className="bg-yellow-300 p-1">Deposit</b><b className="p-1">{displayTemplateValue(getTemplateDataValue(data, "invoice.depositAmountUsd"))}</b><span className="p-1">Deposit before {displayTemplateValue(getTemplateDataValue(data, "invoice.depositDueDate"))}</span></div><div className="grid grid-cols-[1fr_auto_auto] border-b"><b className="bg-yellow-300 p-1">Balance</b><b className="p-1">{displayTemplateValue(getTemplateDataValue(data, "invoice.balanceAmountUsd"))}</b><span className="p-1">Due Date {displayTemplateValue(getTemplateDataValue(data, "invoice.dueDate"))}</span></div></div>;
+  if (block.type === "paymentOptions") return <div className="space-y-5 text-[10px]">{objectRows(getTemplateDataValue(data, "invoice.paymentOptions")).map((option, index) => <div key={index}><b>Option {index + 1}: {rowValue(option, "name")}</b><p className="whitespace-pre-wrap">{rowValue(option, "content")}</p></div>)}</div>;
+  if (block.type === "estimateTables") { const costs = objectRows(getTemplateDataValue(data, "estimate.costItems")); const revenues = objectRows(getTemplateDataValue(data, "estimate.revenueItems")); return <div className="grid grid-cols-2 gap-4">{table(["HẠNG MỤC", "ĐƠN GIÁ", "SỐ LƯỢNG", "THÀNH TIỀN", "VAT", "NOTE"], costs.map((item) => ["category", "unitPrice", "quantity", "amount", "vat", "note"].map((key) => rowValue(item, key))))}{table(["Quyết toán", "Danh mục", "Đơn giá (USD)", "Số lượng", "Tiền đô", "Tiền Việt"], revenues.map((item) => ["settlementType", "description", "unitPriceUsd", "quantity", "amountUsd", "amountVnd"].map((key) => rowValue(item, key))))}</div>; }
+  if (block.type === "estimateProfit") return <div className="border p-3 text-center text-sm font-bold">CHỐT LỜI = DOANH THU - CHI PHÍ: {displayTemplateValue(getTemplateDataValue(data, "estimate.profit"))}</div>;
+  return null;
+}

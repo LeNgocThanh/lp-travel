@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: lp-travel
+    restart: unless-stopped
+    ports:
+      - "6364:6364"
+    env_file:
+      - .env

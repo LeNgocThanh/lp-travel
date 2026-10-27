@@ -1,0 +1,7 @@
+ALTER TABLE "LeadInvoice" ADD COLUMN "layoutVersion" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "WorkCaseItinerary" ADD COLUMN "layoutVersion" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "QuickItinerary" ADD COLUMN "layoutVersion" INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE "LeadInvoice" ALTER COLUMN "layoutVersion" SET DEFAULT 2;
+ALTER TABLE "WorkCaseItinerary" ALTER COLUMN "layoutVersion" SET DEFAULT 2;
+ALTER TABLE "QuickItinerary" ALTER COLUMN "layoutVersion" SET DEFAULT 2;

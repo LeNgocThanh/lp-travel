@@ -1,0 +1,16 @@
+import { Archive, ArchiveRestore, Tags } from "lucide-react";
+import { createSupplierType, setSupplierTypeActive, updateSupplierType } from "@/app/actions/travel-master-data";
+import { FormDialog } from "@/components/form-dialog";
+import { SupplierTypeForm } from "@/components/supplier-type-form";
+import { WorkCaseActionForm } from "@/components/work-case-action-form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export default async function SupplierTypesPage() {
+  await requireAdmin(); const supplierTypes = await prisma.supplierType.findMany({ include: { _count: { select: { suppliers: true } } }, orderBy: [{ active: "desc" }, { name: "asc" }] });
+  return <div className="space-y-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-semibold">Loại nhà cung cấp</h1><p className="text-sm text-muted-foreground">Danh mục phân loại khách sạn, vận chuyển, nhà hàng, hướng dẫn viên và các đối tác khác.</p></div><FormDialog title="Tạo loại nhà cung cấp" description="Loại mới sẽ xuất hiện trong form nhà cung cấp." version={supplierTypes.length} triggerLabel="Tạo loại" triggerIcon={<Tags />} className="sm:max-w-2xl"><SupplierTypeForm action={createSupplierType} prefix="new-supplier-type" /></FormDialog></div><Card className="gap-0 overflow-hidden p-0"><Table><TableHeader><TableRow className="bg-slate-50/80"><TableHead className="pl-4">Loại nhà cung cấp</TableHead><TableHead>Mô tả</TableHead><TableHead>Số nhà cung cấp</TableHead><TableHead>Trạng thái</TableHead><TableHead className="pr-4 text-right">Thao tác</TableHead></TableRow></TableHeader><TableBody>{supplierTypes.map((type) => <TableRow key={type.id}><TableCell className="pl-4"><p className="font-medium">{type.name}</p><code className="text-xs text-muted-foreground">{type.code}</code></TableCell><TableCell className="max-w-sm text-sm text-muted-foreground">{type.description || "—"}</TableCell><TableCell>{type._count.suppliers}</TableCell><TableCell><Badge variant="outline" className={type.active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-100 text-slate-500"}>{type.active ? "Hoạt động" : "Đã lưu trữ"}</Badge></TableCell><TableCell className="pr-4"><div className="flex justify-end gap-1"><FormDialog title={type.name} version={type.updatedAt.getTime()} triggerLabel="Chi tiết" triggerVariant="ghost" triggerSize="sm" className="sm:max-w-2xl"><SupplierTypeForm action={updateSupplierType.bind(null, type.id)} item={type} prefix={type.id} /></FormDialog><WorkCaseActionForm action={setSupplierTypeActive.bind(null, type.id, !type.active)}><Button type="submit" variant="ghost" size="sm">{type.active ? <Archive /> : <ArchiveRestore />}{type.active ? "Lưu trữ" : "Khôi phục"}</Button></WorkCaseActionForm></div></TableCell></TableRow>)}{!supplierTypes.length && <TableRow><TableCell colSpan={5} className="py-12 text-center text-muted-foreground">Chưa có loại nhà cung cấp.</TableCell></TableRow>}</TableBody></Table></Card></div>;
+}

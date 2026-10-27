@@ -1,0 +1,11 @@
+import { MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export default async function ProductsPage() {
+  await requireUser();
+  const products = await prisma.product.findMany({ where: { active: true }, include: { itineraryDays: { orderBy: { dayNumber: "asc" } } }, orderBy: [{ type: "asc" }, { name: "asc" }] });
+  return <div className="space-y-5"><div><h1 className="text-2xl font-semibold">Danh mục tour và dịch vụ</h1><p className="text-sm text-muted-foreground">Danh mục đang hoạt động và lịch trình chi tiết của từng tour.</p></div><div className="grid gap-4 md:grid-cols-2">{products.map((product) => <Card key={product.id}><CardHeader><CardTitle>{product.name}</CardTitle><CardDescription>{product.code} · {product.type}{product.itineraryDays.length ? ` · ${product.itineraryDays.length} ngày` : ""}</CardDescription></CardHeader><CardContent className="space-y-4 text-sm"><p className="whitespace-pre-wrap">{product.description || "Chưa có mô tả."}</p>{product.itineraryDays.length > 0 && <div className="space-y-3 border-t pt-4">{product.itineraryDays.map((day) => <div key={day.id} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge>Ngày {day.dayNumber}</Badge><p className="font-medium">{day.title || `${day.startLocation || "Điểm đầu"} – ${day.endLocation || "Điểm cuối"}`}</p></div><p className="mt-2 flex items-center gap-1 text-muted-foreground"><MapPin className="size-3.5" /> {day.startLocation || "—"} → {day.endLocation || "—"}</p>{day.activityLocation && <p className="mt-2"><span className="font-medium">Địa điểm hoạt động:</span> {day.activityLocation}</p>}{day.description && <p className="mt-2 whitespace-pre-wrap">{day.description}</p>}<p className="mt-2 text-xs text-muted-foreground">Bữa ăn: {[day.breakfast && "Sáng", day.lunch && "Trưa", day.dinner && "Tối"].filter(Boolean).join(", ") || "Không bao gồm"} · Lưu trú: {day.accommodation || "—"}</p></div>)}</div>}</CardContent></Card>)}</div>{!products.length && <p className="text-sm text-muted-foreground">Chưa có tour hoặc dịch vụ nào.</p>}</div>;
+}

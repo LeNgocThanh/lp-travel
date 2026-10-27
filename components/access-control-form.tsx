@@ -1,0 +1,18 @@
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { WorkCaseActionForm } from "@/components/work-case-action-form";
+
+type Item = { code: string; name: string; description: string | null; isSystemAdmin?: boolean };
+
+export function AccessControlForm({ action, item, kind }: { action: (formData: FormData) => void | Promise<void>; item?: Item; kind: "role" | "permission" | "resource" | "base-permission" }) {
+  return <WorkCaseActionForm action={action} className="grid gap-3"><div><Label htmlFor={`${kind}-${item?.code ?? "new"}-code`}>Mã</Label><Input id={`${kind}-${item?.code ?? "new"}-code`} name="code" defaultValue={item?.code} disabled={!!item} required={!item} minLength={2} maxLength={80} pattern="[A-Za-z][A-Za-z0-9._-]+" />{item && <p className="mt-1 text-xs text-muted-foreground">Mã được khóa sau khi tạo để bảo toàn các kiểm tra quyền.</p>}</div><div><Label htmlFor={`${kind}-${item?.code ?? "new"}-name`}>Tên</Label><Input id={`${kind}-${item?.code ?? "new"}-name`} name="name" defaultValue={item?.name} required minLength={2} maxLength={100} /></div><div><Label htmlFor={`${kind}-${item?.code ?? "new"}-description`}>Mô tả</Label><Textarea id={`${kind}-${item?.code ?? "new"}-description`} name="description" defaultValue={item?.description ?? ""} maxLength={1000} /></div>{kind === "role" && <label className="flex items-center gap-2"><Checkbox name="isSystemAdmin" defaultChecked={item?.isSystemAdmin ?? false} /> Toàn quyền hệ thống</label>}<Button type="submit" className="justify-self-start">{item ? "Lưu thay đổi" : "Tạo mới"}</Button></WorkCaseActionForm>;
+}
+
+type ResourcePermissionItem = { name: string; resourceId: string; basePermissionId: string; description: string | null };
+
+export function ResourcePermissionForm({ action, item, resources, basePermissions }: { action: (formData: FormData) => void | Promise<void>; item?: ResourcePermissionItem; resources: { id: string; name: string; code: string }[]; basePermissions: { id: string; name: string; code: string }[] }) {
+  return <WorkCaseActionForm action={action} className="grid gap-3"><div><Label htmlFor="resource-permission-name">Tên quyền</Label><Input id="resource-permission-name" name="name" defaultValue={item?.name} required minLength={2} maxLength={100} placeholder="Ví dụ: Xem khách hàng" /></div><div><Label htmlFor="resource-permission-resource">Tài nguyên</Label><select id="resource-permission-resource" name="resourceId" defaultValue={item?.resourceId ?? ""} required className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"><option value="">Chọn tài nguyên</option>{resources.map((resource) => <option key={resource.id} value={resource.id}>{resource.name} ({resource.code})</option>)}</select></div><div><Label htmlFor="resource-permission-base">Quyền gốc</Label><select id="resource-permission-base" name="basePermissionId" defaultValue={item?.basePermissionId ?? ""} required className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"><option value="">Chọn quyền gốc</option>{basePermissions.map((permission) => <option key={permission.id} value={permission.id}>{permission.name} ({permission.code})</option>)}</select></div><div><Label htmlFor="resource-permission-description">Mô tả riêng</Label><Textarea id="resource-permission-description" name="description" defaultValue={item?.description ?? ""} maxLength={1000} /></div><Button type="submit" className="justify-self-start">{item ? "Lưu thay đổi" : "Tạo tổ hợp quyền"}</Button></WorkCaseActionForm>;
+}

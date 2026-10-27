@@ -1,0 +1,1 @@
+export const CURRENT_DOCUMENT_LAYOUT_VERSION = 2;

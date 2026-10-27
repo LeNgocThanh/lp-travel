@@ -1,0 +1,3 @@
+ALTER TABLE "ProductItineraryDay" ADD COLUMN "brunch" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "WorkCaseItineraryDay" ADD COLUMN "brunch" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "QuickItineraryDay" ADD COLUMN "brunch" BOOLEAN NOT NULL DEFAULT false;

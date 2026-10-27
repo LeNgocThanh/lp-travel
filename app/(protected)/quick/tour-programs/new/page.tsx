@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { createQuickTourProgram, getQuickTourProgramSourceInitial } from "@/app/actions/quick-tour-programs";
+import { QuickTourProgramForm } from "@/components/quick-tour-program-form";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export default async function NewQuickTourProgramPage({ searchParams }: { searchParams: Promise<{ itineraryId?: string }> }) { await requireUser(); const { itineraryId } = await searchParams; const [templates, tourGuides, initial] = await Promise.all([prisma.documentTemplate.findMany({ where: { active: true, type: { in: ["HEADER", "FOOTER"] } }, select: { id: true, name: true, type: true, isDefault: true }, orderBy: [{ isDefault: "desc" }, { name: "asc" }] }), prisma.tourGuide.findMany({ select: { id: true, fullName: true, phone: true }, orderBy: { fullName: "asc" } }), itineraryId ? getQuickTourProgramSourceInitial(itineraryId) : Promise.resolve(undefined)]); return <div className="space-y-5"><Link href={itineraryId ? `/quick/${itineraryId}` : "/quick/tour-programs"} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{itineraryId ? "Quay lại lịch trình" : "Danh sách chương trình Tour"}</Link><div><h1 className="text-2xl font-semibold">Tạo chương trình Tour</h1><p className="text-sm text-muted-foreground">{itineraryId ? "Thông tin đã được điền từ lịch trình và có thể sửa lại trước khi lưu." : "Nhập trực tiếp toàn bộ thông tin, không liên kết Lead hoặc itinerary."}</p></div><QuickTourProgramForm action={createQuickTourProgram} templates={templates} tourGuides={tourGuides} initial={initial} /></div>; }
